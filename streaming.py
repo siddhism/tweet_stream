@@ -121,4 +121,5 @@ if __name__ == '__main__':
     auth.set_access_token(access_token, access_token_secret)
 
     stream = Stream(auth, stdout_listener)
-    stream.filter(track=['diwali'])
+    word = raw_input('press ctrl + c to exit anytime. Enter the word which you want to track : ')
+    stream.filter(track=[word])
