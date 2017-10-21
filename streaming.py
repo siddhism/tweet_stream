@@ -2,6 +2,7 @@
 
 import json
 import time
+import os
 from collections import Counter
 
 from tweepy.streaming import StreamListener
@@ -11,13 +12,24 @@ from tweepy import Stream
 # Go to http://apps.twitter.com and create an app.
 # The consumer key and secret will be generated for you after
 # TODO : move them to env variables
-consumer_key = "14loJxKN3k9FtJDC8Q4mmBrGA"
-consumer_secret = "oLkx6lXScnZGSE4nlKv6e0tOTMYtx5bidZnbtdaFPGTSLUvVrt"
+# consumer_key = "14loJxKN3k9FtJDC8Q4mmBrGA"
+# consumer_secret = "oLkx6lXScnZGSE4nlKv6e0tOTMYtx5bidZnbtdaFPGTSLUvVrt"
 
-# After the step above, you will be redirected to your app's page.
-# Create an access token under the the "Your access token" section
-access_token = "2422424420-MKnQbC39ThGQh8O5An5t12JUGuPrqTeGJG2HOXQ"
-access_token_secret = "6PyJDrw8ilepeSeFc745Gp0pI4qaCfd8X7xxOLas4Fyki"
+# # After the step above, you will be redirected to your app's page.
+# # Create an access token under the the "Your access token" section
+# access_token = "2422424420-MKnQbC39ThGQh8O5An5t12JUGuPrqTeGJG2HOXQ"
+# access_token_secret = "6PyJDrw8ilepeSeFc745Gp0pI4qaCfd8X7xxOLas4Fyki"
+
+consumer_key = os.environ.get('consumer_key')
+consumer_secret = os.environ.get('consumer_secret')
+access_token = os.environ.get('access_token')
+access_token_secret = os.environ.get('access_token_secret')
+
+
+if not consumer_key or not consumer_secret or not access_token or not access_token_secret:
+    print 'Please set these environment variables in order to run \n',\
+        'consumer_key, consumer_secret, access_token, access_token_secret \n',\
+        'or contact siddhesh.it@gmail.com if keys are needed \n'
 
 
 class Result(object):
