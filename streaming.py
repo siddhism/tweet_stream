@@ -9,17 +9,6 @@ from tweepy.streaming import StreamListener
 from tweepy import OAuthHandler
 from tweepy import Stream
 
-# Go to http://apps.twitter.com and create an app.
-# The consumer key and secret will be generated for you after
-# TODO : move them to env variables
-# consumer_key = "14loJxKN3k9FtJDC8Q4mmBrGA"
-# consumer_secret = "oLkx6lXScnZGSE4nlKv6e0tOTMYtx5bidZnbtdaFPGTSLUvVrt"
-
-# # After the step above, you will be redirected to your app's page.
-# # Create an access token under the the "Your access token" section
-# access_token = "2422424420-MKnQbC39ThGQh8O5An5t12JUGuPrqTeGJG2HOXQ"
-# access_token_secret = "6PyJDrw8ilepeSeFc745Gp0pI4qaCfd8X7xxOLas4Fyki"
-
 consumer_key = os.environ.get('consumer_key')
 consumer_secret = os.environ.get('consumer_secret')
 access_token = os.environ.get('access_token')
@@ -32,7 +21,7 @@ if not consumer_key or not consumer_secret or not access_token or not access_tok
         'or contact siddhesh.it@gmail.com if keys are needed \n'
 
 
-class Result(object):
+class Cache(object):
 
     def __init__(self):
         """
@@ -41,11 +30,12 @@ class Result(object):
         self.result = {}
         self.max_size = 10000
         self.start_time = time.time()
-        self.step_time = 5 # should be 30
+        self.step_time = 30  # should be 30
         self.last_cleanup = time.time()
         self.last_show_result = time.time()
-        self.show_interval = 10 # shoud be 60
-        pass
+        self.show_interval = 60  # shoud be 60
+        self.last_prune = time.time()
+        self.prune_interval = 200
 
     def set_results(self, words):
         """
@@ -58,39 +48,45 @@ class Result(object):
                 self.result[word] = [self.result[word][0] + 1, time.time()]
             else:
                 self.result[word] = [1, time.time()]
+
         if time.time() >= self.last_cleanup + self.step_time:
-            print 'calling cleanup'
             self.cleanup()
             self.last_cleanup = time.time()
         if time.time() >= self.last_show_result + self.show_interval:
             self.print_results()
             self.last_show_result = time.time()
+        if time.time() >= self.last_prune + self.prune_interval:
+            self.prune_cache()
+            self.last_prune = time.time()
 
     def cleanup(self):
         """
-        compute Every 30 seconds, if word does not appear in 1 minute, decrememnt_count by 1
-        if the count falls below zero, its pruned from cache
+        compute Every 30 seconds.
+        If word does not appear in 1 minute decrememnt_count by 1
+        If the count falls below zero, its pruned from cache
         """
-        print time.time()
-        print 'doing cleanup'
         for word, data in self.result.items():
             count = data[0]
             last_seen = data[1]
             # every minute a word is not seen its score goes down by 1
             if last_seen <= time.time() - self.show_interval:
                 count = count - 1
-                print ' decremented ', word, count
+                # print ' decremented ', word, count
             self.result[word] = [count, time.time()]
             # if count falls below 0 pop it
             if count < 0:
                 self.result.pop(word)
-        pass
 
     def prune_cache(self):
         """
-        if length of dict reaches maximum size. (not provided, assumed 10k)
+        if length of dict reaches maximum size. (not provided, assumed 1000)
         words with score zero can be dropped from cache.
         """
+        if len(self.result.keys() == 1000):
+            for word, data in self.result.items():
+                count = data[0]
+                if count == 0:
+                    self.result.pop(word)
 
     def print_results(self):
         """
@@ -111,20 +107,18 @@ class StdOutListener(StreamListener):
     """
     def __init__(self, *args, **kwargs):
         super(StdOutListener, self).__init__(*args, **kwargs)
-        self.result = Result()
+        self.cache = Cache()
 
     def on_data(self, data):
-        print time.time()
         data = json.loads(data)
-        # assuming data is single tweet here
         if data.get('text'):
             words = data.get('text').split(' ')
-            self.result.set_results(words)
+            self.cache.set_results(words)
         return True
 
     def on_error(self, status):
         print(status)
-        self.result.print_results()
+        self.cache.print_results()
 
 
 if __name__ == '__main__':
